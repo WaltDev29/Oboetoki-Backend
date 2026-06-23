@@ -1,39 +1,51 @@
 import os
 import json
+import base64
 from openai import OpenAI
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
-def parse_ocr_text_to_words(raw_text: str) -> list[dict]:
+def parse_image_to_words(image_bytes: bytes) -> list[dict]:
     """
-    OCR로 추출된 텍스트를 LLM에 전달하여 단어와 뜻 쌍으로 구성된 딕셔너리 리스트를 반환합니다.
+    이미지 바이트 데이터를 OpenAI Vision API(gpt-4o 등)로 바로 전송하여
+    단어와 뜻 쌍으로 구성된 딕셔너리 리스트를 반환합니다. Tesseract를 대체합니다.
     """
-    if not raw_text or not raw_text.strip():
+    if not image_bytes:
         return []
 
-    prompt = f"""
-다음은 사용자가 외국어 단어장을 사진으로 찍어서 OCR로 추출한 텍스트입니다.
-텍스트에는 원어(영어, 일본어 등)와 한국어 뜻이 섞여있거나 오타가 있을 수 있습니다.
-이 텍스트를 분석하여 원어와 한국어 뜻의 쌍을 추출해 주세요.
+    # 이미지를 base64로 인코딩
+    base64_image = base64.b64encode(image_bytes).decode('utf-8')
+
+    prompt = """
+사용자가 외국어 단어장을 사진으로 찍어 올렸습니다.
+이 이미지에 있는 텍스트를 분석하여 원어(영어, 일본어 등)와 한국어 뜻의 쌍을 완벽하게 추출해 주세요.
 
 추출된 데이터는 반드시 아래의 JSON 배열 형식으로만 응답해 주세요. (추가 설명이나 마크다운 백틱 없이 순수 JSON만 반환)
 [
-  {{"original": "단어", "translated": "한국어 뜻"}},
+  {"original": "단어", "translated": "한국어 뜻"},
   ...
 ]
-
-[추출할 텍스트]
-{raw_text}
 """
     try:
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that parses raw OCR text of vocabulary books into clean JSON arrays containing original words and their translations. You must return only valid JSON."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
             ],
-            temperature=0.3,
+            temperature=0.1,
+            max_tokens=1500,
         )
         content = response.choices[0].message.content.strip()
         # 혹시라도 마크다운 코드 블록이 섞여 있다면 제거
@@ -45,7 +57,7 @@ def parse_ocr_text_to_words(raw_text: str) -> list[dict]:
         parsed_data = json.loads(content.strip())
         return parsed_data
     except Exception as e:
-        print(f"LLM Parsing Error: {e}")
+        print(f"OpenAI Vision Parsing Error: {e}")
         return []
 
 def get_quote_of_the_day() -> str:

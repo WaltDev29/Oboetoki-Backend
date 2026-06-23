@@ -6,8 +6,7 @@ from ..models.user import User
 from ..models.word import UserWord
 from ..schemas.word import WordCreate, WordUpdate, WordResponse, OCRResponse, OCRParsedWord
 from ..core.security import get_current_user
-from ..services.ocr_service import extract_text_from_image
-from ..services.llm_service import parse_ocr_text_to_words
+from ..services.llm_service import parse_image_to_words
 
 router = APIRouter()
 
@@ -90,15 +89,11 @@ def update_word(word_id: int, word_update: WordUpdate, db: Session = Depends(get
 @router.post("/ocr", response_model=OCRResponse)
 async def process_ocr_image(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
     """
-    이미지를 업로드받아 텍스트를 추출하고, LLM을 통해 단어와 뜻을 파싱하여 반환합니다.
-    (DB에 자동 저장하지 않고 반환만 수행)
+    이미지를 업로드받아 OpenAI Vision API를 통해 직접 단어와 뜻을 추출하여 파싱해 반환합니다.
     """
     contents = await file.read()
-    raw_text = extract_text_from_image(contents)
-    if not raw_text:
-        return OCRResponse(parsed_words=[])
-        
-    parsed_data = parse_ocr_text_to_words(raw_text)
+    
+    parsed_data = parse_image_to_words(contents)
     
     # Dict List -> Pydantic Model List
     parsed_words = []
