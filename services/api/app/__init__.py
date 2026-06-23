@@ -7,10 +7,17 @@ def create_app() -> FastAPI:
     # 데이터베이스 테이블 생성
     Base.metadata.create_all(bind=engine)
 
+    tags_metadata = [
+        {"name": "Auth", "description": "사용자 인증 및 회원가입 관련 API"},
+        {"name": "Words", "description": "사용자 개인 단어장 관리 및 OCR 스캔 API"},
+        {"name": "Main", "description": "앱 메인 화면용 통계 및 데이터 조회 API"}
+    ]
+
     app = FastAPI(
         title="Oboetoki API",
         description="Oboetoki 안드로이드 앱을 위한 백엔드 API",
         version="1.0.0",
+        openapi_tags=tags_metadata
     )
 
     # CORS 설정 (앱에서의 접근 허용)

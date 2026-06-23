@@ -1,9 +1,9 @@
-version: "3.9"
+name: oboetoki
 
 services:
   db:
     image: mysql:8.0
-    container_name: oboetoki_db
+    container_name: oboetoki-db
     restart: always
     env_file:
       - ../env/.env.db
@@ -11,15 +11,18 @@ services:
       - "3306:3306"
     volumes:
       - oboetoki_db_data:/var/lib/mysql
-    networks:
-      - oboetoki_network
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   api:
     build:
       context: ../../services/api
       dockerfile: Dockerfile
-    container_name: oboetoki_api
+    container_name: oboetoki-api
     restart: always
     env_file:
       - ../env/.env.api
@@ -28,14 +31,10 @@ services:
     volumes:
       - ../../services/api:/app
     depends_on:
-      - db
-    networks:
-      - oboetoki_network
+      db:
+        condition: service_healthy
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 volumes:
   oboetoki_db_data:
 
-networks:
-  oboetoki_network:
-    driver: bridge
