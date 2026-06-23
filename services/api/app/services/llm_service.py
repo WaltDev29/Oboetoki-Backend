@@ -63,22 +63,3 @@ def parse_image_to_words(image_bytes: bytes) -> list[dict]:
     except Exception as e:
         print(f"OpenAI Vision Parsing Error: {e}")
         return []
-
-def get_quote_of_the_day() -> str:
-    """
-    외국어 학습에 동기부여가 되는 오늘의 한 마디를 생성합니다.
-    """
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "You are a motivational assistant for language learners."},
-                {"role": "user", "content": "외국어 학습에 동기부여가 되는 짧고 인상 깊은 명언이나 한 마디를 한국어로 하나만 말해줘. 1~2문장 내외로."}
-            ],
-            temperature=0.7,
-            max_tokens=100
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"LLM Quote Error: {e}")
-        return "꾸준함이 모든 것을 이깁니다. 오늘도 화이팅!"

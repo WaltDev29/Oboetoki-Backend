@@ -6,8 +6,7 @@ from ..db.database import get_db
 from ..models.user import User
 from ..models.word import UserWord
 from ..core.security import get_current_user
-from ..services.llm_service import get_quote_of_the_day
-
+from ..services.quote_service import get_daily_quote
 router = APIRouter()
 
 def get_kst_today() -> date:
@@ -31,8 +30,8 @@ def get_main_page_data(db: Session = Depends(get_db), current_user: User = Depen
     total_words = db.query(UserWord).filter(UserWord.user_id == current_user.id).count()
     memorized_words = db.query(UserWord).filter(UserWord.user_id == current_user.id, UserWord.is_memorized == True).count()
     
-    # 명언 생성
-    quote = get_quote_of_the_day()
+    # 명언 생성 (서비스 분리)
+    quote = get_daily_quote(db, today)
     
     return {
         "consecutive_attendance": current_user.consecutive_attendance,
