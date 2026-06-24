@@ -35,3 +35,7 @@ class OCRParsedWord(BaseModel):
 
 class OCRResponse(BaseModel):
     parsed_words: List[OCRParsedWord]
+
+class BatchWordResponse(BaseModel):
+    added_words: List[WordResponse] = Field(..., description="성공적으로 추가된 단어 목록")
+    ignored_words: List[str] = Field(..., description="이미 존재하여 추가가 무시된 단어들의 원어 목록")
