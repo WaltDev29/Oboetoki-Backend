@@ -3,8 +3,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from ..db.database import get_db
 from ..models.user import User
-from ..schemas.user import UserCreate, UserResponse, Token
-from ..core.security import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from ..schemas.user import UserCreate, UserResponse, Token, UserInfoResponse
+from ..core.security import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_user
 from datetime import timedelta
 
 router = APIRouter()
@@ -64,3 +64,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get(
+    "/me",
+    response_model=UserInfoResponse,
+    summary="내 정보 조회",
+    description="현재 로그인한 사용자의 이름과 이메일 정보를 반환합니다."
+)
+def get_my_info(current_user: User = Depends(get_current_user)):
+    return current_user

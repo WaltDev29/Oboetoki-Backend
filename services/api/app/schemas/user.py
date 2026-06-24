@@ -22,3 +22,10 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class UserInfoResponse(BaseModel):
+    name: str = Field(..., examples=["홍길동"], description="사용자 이름")
+    email: str = Field(..., examples=["user@example.com"], description="사용자 이메일")
+    
+    class Config:
+        from_attributes = True
