@@ -19,6 +19,7 @@ router = APIRouter()
 def get_words(
     is_memorized: Optional[bool] = None,
     sort_order: Optional[str] = "desc",
+    source_language: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -26,6 +27,9 @@ def get_words(
     
     if is_memorized is not None:
         query = query.filter(UserWord.is_memorized == is_memorized)
+        
+    if source_language is not None:
+        query = query.filter(UserWord.source_language == source_language)
         
     if sort_order.lower() == "asc":
         query = query.order_by(UserWord.created_at.asc())
@@ -96,6 +100,33 @@ def create_words_batch(words: List[WordCreate], db: Session = Depends(get_db), c
     for w in new_words:
         db.refresh(w)
     return BatchWordResponse(added_words=new_words, ignored_words=ignored_words)
+
+@router.get(
+    "/search", 
+    response_model=List[WordResponse],
+    summary="단어 검색",
+    description="텍스트를 입력받아 원어, 발음, 또는 뜻에 해당 텍스트가 포함된 단어 목록을 반환합니다."
+)
+def search_words(
+    q: str,
+    source_language: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    search_term = f"%{q}%"
+    query = db.query(UserWord).filter(
+        UserWord.user_id == current_user.id,
+        (UserWord.original_word.ilike(search_term)) |
+        (UserWord.reading.ilike(search_term)) |
+        (UserWord.translated_word.ilike(search_term))
+    )
+    
+    if source_language is not None:
+        query = query.filter(UserWord.source_language == source_language)
+        
+    words = query.order_by(UserWord.created_at.desc()).all()
+    
+    return words
 
 @router.get(
     "/{word_id}", 
