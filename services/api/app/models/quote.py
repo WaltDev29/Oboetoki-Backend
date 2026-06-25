@@ -6,3 +6,4 @@ class Quote(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     text = Column(String(500), nullable=False)
+    author = Column(String(100), nullable=False)
