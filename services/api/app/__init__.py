@@ -37,7 +37,8 @@ def create_app() -> FastAPI:
         title="Oboetoki API",
         description="Oboetoki 안드로이드 앱을 위한 백엔드 API",
         version="1.0.0",
-        openapi_tags=tags_metadata
+        openapi_tags=tags_metadata,
+        root_path="/oboetoki/api/"
     )
 
     # CORS 설정 (앱에서의 접근 허용)
