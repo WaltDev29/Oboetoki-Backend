@@ -66,12 +66,20 @@ def parse_image_to_words(image_bytes: bytes, base_url: str = None) -> list[dict]
             temperature=0.1,
             max_tokens=1500,
         )
-        content = response.choices[0].message.content.strip()
-        # 혹시라도 마크다운 코드 블록이 섞여 있다면 제거
+        content = (response.choices[0].message.content or "").strip()
+        print(f"[OpenAI Vision] Model: {target_model}, Raw Content: {repr(content)}")
+
+        if not content:
+            print("[OpenAI Vision] LLM이 빈 내용을 응답했습니다.")
+            return []
+
+        # 마크다운 코드 블록 제거
         if content.startswith("```json"):
-            content = content[7:-3]
+            content = content[7:]
         elif content.startswith("```"):
-            content = content[3:-3]
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
             
         parsed_data = json.loads(content.strip())
         return parsed_data
