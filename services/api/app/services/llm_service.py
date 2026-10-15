@@ -3,10 +3,20 @@ import json
 import base64
 from openai import OpenAI
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+def get_client(base_url: str = None) -> OpenAI:
+    target_base_url = base_url or os.environ.get("LLM_BASE_URL")
+    api_key = os.environ.get("OPENAI_API_KEY", "") or "APIKEY"
+    if target_base_url:
+        return OpenAI(
+            api_key=api_key,
+            base_url=target_base_url,
+            default_headers={"User-Agent": "Mozilla/5.0"},
+        )
+    return OpenAI(api_key=api_key)
 
-def parse_image_to_words(image_bytes: bytes) -> list[dict]:
+client = get_client()
+
+def parse_image_to_words(image_bytes: bytes, base_url: str = None) -> list[dict]:
     """
     이미지 바이트 데이터를 OpenAI Vision API(gpt-4o 등)로 바로 전송하여
     단어와 뜻 쌍으로 구성된 딕셔너리 리스트를 반환합니다. Tesseract를 대체합니다.
@@ -35,8 +45,10 @@ def parse_image_to_words(image_bytes: bytes) -> list[dict]:
 ]
 """
     try:
-        response = client.chat.completions.create(
-            model=model,
+        target_client = get_client(base_url) if base_url else (get_client() if os.environ.get("LLM_BASE_URL") else client)
+        target_model = os.environ.get("LLM_MODEL", "gpt-4o-mini")
+        response = target_client.chat.completions.create(
+            model=target_model,
             messages=[
                 {
                     "role": "user",
